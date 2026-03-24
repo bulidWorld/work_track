@@ -5,44 +5,53 @@
       <div class="task-list">
         <div class="list-header">
           <h2>任务列表</h2>
-          <button @click="showCreateTaskForm = true" class="create-task-btn">创建新任务</button>
+          <button @click="showCreateTaskForm = true" class="create-task-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            新建任务
+          </button>
         </div>
         <div v-if="tasks.length === 0" class="empty-state">
           <p>暂无任务，点击上方按钮创建新任务</p>
         </div>
         <div v-else class="tasks">
-          <div 
-            v-for="task in tasks" 
-            :key="task.id" 
+          <div
+            v-for="task in tasks"
+            :key="task.id"
             class="task-item"
             :class="{ 'completed': task.status === 'completed', 'selected': selectedTask && selectedTask.id === task.id }"
             @click="showTaskDetail(task)"
           >
-            <div class="task-hierarchy">
-              {{ taskHierarchyCache[task.id] }}
-            </div>
             <div class="task-title">
               <h3>{{ task.title }}</h3>
               <div class="task-status-container">
                 <span class="task-status-indicator" :class="task.status">
+                  <svg v-if="task.status === 'in_progress'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   {{ task.status === 'in_progress' ? '进行中' : '已完成' }}
                 </span>
                 <span class="task-assignee-indicator" v-if="task.assignee">
-                  协助人：{{ task.assignee }}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  {{ task.assignee }}
                 </span>
                 <span v-if="task.status !== 'completed'" class="task-due-date-indicator" :class="getTimeRemaining(task.dueDate).isOverdue ? 'overdue' : ''">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                   {{ getTimeRemaining(task.dueDate).text }}
                 </span>
               </div>
               <div class="task-meta">
                 <span class="task-created-at">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                   {{ formatDate(task.createdAt) }}
                 </span>
               </div>
             </div>
             <div class="task-item-actions">
-              <button @click.stop="editTask(task)" class="btn btn-edit">编辑</button>
-              <button @click.stop="deleteTask(task.id)" class="btn btn-delete">删除</button>
+              <button @click.stop="editTask(task)" class="btn btn-edit" aria-label="编辑任务">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              <button @click.stop="deleteTask(task.id)" class="btn btn-delete" aria-label="删除任务">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -54,27 +63,32 @@
           <div class="task-info">
             <h3>{{ selectedTask.title }}</h3>
             <div class="task-status-container">
-              <div class="task-status-detail" :class="selectedTask.status">
+              <span class="task-status-indicator" :class="selectedTask.status">
+                <svg v-if="selectedTask.status === 'in_progress'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 {{ selectedTask.status === 'in_progress' ? '进行中' : '已完成' }}
-              </div>
-              <div class="task-assignee-indicator" v-if="selectedTask.assignee">
-                协助人：{{ selectedTask.assignee }}
-              </div>
-              <div v-if="selectedTask.status !== 'completed'" class="task-due-date-indicator" :class="getTimeRemaining(selectedTask.dueDate).isOverdue ? 'overdue' : ''">
-              {{ getTimeRemaining(selectedTask.dueDate).text }}
-            </div>
+              </span>
+              <span class="task-assignee-indicator" v-if="selectedTask.assignee">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                {{ selectedTask.assignee }}
+              </span>
+              <span v-if="selectedTask.status !== 'completed'" class="task-due-date-indicator" :class="getTimeRemaining(selectedTask.dueDate).isOverdue ? 'overdue' : ''">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                {{ getTimeRemaining(selectedTask.dueDate).text }}
+              </span>
             </div>
             <div class="task-description" v-html="selectedTask.description"></div>
             <button @click="markAsCompleted(selectedTask.id)" class="btn btn-complete" v-if="selectedTask.status === 'in_progress'">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               标记为已完成
             </button>
-           
           </div>
-          
+
           <div class="subtasks">
             <div class="subtasks-header">
               <h3>子任务</h3>
               <button @click="showCreateSubTaskForm = true" class="create-subtask-btn" v-if="selectedTask.status === 'in_progress'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 添加子任务
               </button>
             </div>
@@ -82,26 +96,33 @@
               <p>暂无子任务</p>
             </div>
             <div v-else class="subtask-list">
-              <div 
-                v-for="subtask in selectedTask.subTasks" 
-                :key="subtask.id" 
+              <div
+                v-for="subtask in selectedTask.subTasks"
+                :key="subtask.id"
                 class="subtask-item"
               >
                 <div class="subtask-content">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     :checked="subtask.status === 'completed'"
                     @change="updateSubTaskStatus(subtask.id, ($event.target as HTMLInputElement).checked)"
+                    :aria-label="`标记 ${subtask.title} 为${subtask.status === 'completed' ? '未完成' : '完成'}`"
                   >
                   <span :class="{ 'completed': subtask.status === 'completed' }">{{ subtask.title }}</span>
                 </div>
                 <div class="subtask-actions">
-                  <button @click="editSubTask(subtask)" class="btn btn-edit-small">编辑</button>
-                  <button @click="updateSubTaskStatus(subtask.id, subtask.status !== 'completed')" class="btn btn-complete-small">
-                    {{ subtask.status === 'completed' ? '标记为未完成' : '标记为已完成' }}
+                  <button @click="editSubTask(subtask)" class="btn btn-edit-small" aria-label="编辑子任务">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                   </button>
-                  <button @click="makeSubTaskIndependent(subtask.id)" class="btn btn-make-independent-small">设为独立任务</button>
-                  <button @click="deleteSubTask(subtask.id)" class="btn btn-delete-small">删除</button>
+                  <button @click="updateSubTaskStatus(subtask.id, subtask.status !== 'completed')" class="btn btn-complete-small" aria-label="切换子任务状态">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </button>
+                  <button @click="makeSubTaskIndependent(subtask.id)" class="btn btn-make-independent-small" aria-label="设为独立任务">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  </button>
+                  <button @click="deleteSubTask(subtask.id)" class="btn btn-delete-small" aria-label="删除子任务">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -109,6 +130,7 @@
         </div>
         <div v-else class="empty-detail">
           <div class="empty-detail-content">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px; opacity: 0.5;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
             <h2>选择任务查看详情</h2>
             <p>从左侧列表中选择一个任务以查看详细信息</p>
           </div>
@@ -118,17 +140,21 @@
     
     <!-- 错误提示 -->
     <div v-if="showError" class="error-toast">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
       {{ errorMessage }}
     </div>
-    
+
     <!-- 创建任务表单 -->
     <div v-if="showCreateTaskForm" class="modal">
       <div class="modal-content">
-        <h2>创建新任务</h2>
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          创建新任务
+        </h2>
         <form @submit.prevent="createTask">
           <div class="form-group">
             <label for="title">任务标题</label>
-            <input type="text" id="title" v-model="taskForm.title" required>
+            <input type="text" id="title" v-model="taskForm.title" required placeholder="请输入任务标题">
           </div>
           <div class="form-group">
             <label for="description">任务描述</label>
@@ -136,9 +162,9 @@
           </div>
           <div class="form-group">
             <label for="dueDate">计划完成日期</label>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <input type="date" id="dueDate" v-model="taskForm.dueDate" style="width: 200px;">
-              <div style="display: flex; gap: 5px;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="date" id="dueDate" v-model="taskForm.dueDate">
+              <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-sm" @click="setDueDate('tomorrow')">明天</button>
                 <button type="button" class="btn btn-sm" @click="setDueDate('nextWeek')">下周</button>
                 <button type="button" class="btn btn-sm" @click="setDueDate('nextMonth')">下月</button>
@@ -150,44 +176,50 @@
             <input type="text" id="assignee" v-model="taskForm.assignee" placeholder="请输入协助人姓名">
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">创建</button>
+            <button type="submit" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              创建
+            </button>
             <button type="button" @click="showCreateTaskForm = false" class="btn btn-cancel">取消</button>
           </div>
         </form>
       </div>
     </div>
-    
+
     <!-- 编辑任务表单 -->
     <div v-if="showEditTaskForm" class="modal">
       <div class="modal-content">
-        <h2>编辑任务</h2>
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          编辑任务
+        </h2>
         <form @submit.prevent="updateTask">
           <div class="form-group">
             <label for="edit-title">任务标题</label>
-            <input type="text" id="edit-title" v-model="editTaskForm.title" required>
+            <input type="text" id="edit-title" v-model="editTaskForm.title" required placeholder="请输入任务标题">
           </div>
           <div class="form-group">
             <label for="edit-description">任务描述</label>
             <QuillEditor v-model:content="editTaskForm.description" contentType="html" />
           </div>
-          <div style="display: flex; gap: 20px;">
-            <div class="form-group" style="flex: 1;">
+          <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
               <label for="edit-status">任务状态</label>
               <select id="edit-status" v-model="editTaskForm.status">
                 <option value="in_progress">进行中</option>
                 <option value="completed">已完成</option>
               </select>
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
               <label for="edit-assignee">协助人</label>
               <input type="text" id="edit-assignee" v-model="editTaskForm.assignee" placeholder="请输入协助人姓名">
             </div>
           </div>
           <div class="form-group">
             <label for="edit-dueDate">计划完成日期</label>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <input type="date" id="edit-dueDate" v-model="editTaskForm.dueDate" style="width: 200px;">
-              <div style="display: flex; gap: 5px;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="date" id="edit-dueDate" v-model="editTaskForm.dueDate">
+              <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-sm" @click="setEditDueDate('tomorrow')">明天</button>
                 <button type="button" class="btn btn-sm" @click="setEditDueDate('nextWeek')">下周</button>
                 <button type="button" class="btn btn-sm" @click="setEditDueDate('nextMonth')">下月</button>
@@ -195,21 +227,27 @@
             </div>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">保存</button>
+            <button type="submit" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              保存
+            </button>
             <button type="button" @click="showEditTaskForm = false" class="btn btn-cancel">取消</button>
           </div>
         </form>
       </div>
     </div>
-    
+
     <!-- 创建子任务表单 -->
     <div v-if="showCreateSubTaskForm" class="modal">
       <div class="modal-content">
-        <h2>添加子任务</h2>
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          添加子任务
+        </h2>
         <form @submit.prevent="createSubTask">
           <div class="form-group">
             <label for="subtask-title">子任务标题</label>
-            <input type="text" id="subtask-title" v-model="subTaskForm.title" required>
+            <input type="text" id="subtask-title" v-model="subTaskForm.title" required placeholder="请输入子任务标题">
           </div>
           <div class="form-group">
             <label for="subtask-description">子任务描述</label>
@@ -217,9 +255,9 @@
           </div>
           <div class="form-group">
             <label for="subtask-dueDate">计划完成日期</label>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <input type="date" id="subtask-dueDate" v-model="subTaskForm.dueDate" style="width: 200px;">
-              <div style="display: flex; gap: 5px;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="date" id="subtask-dueDate" v-model="subTaskForm.dueDate">
+              <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-sm" @click="setSubTaskDueDate('tomorrow')">明天</button>
                 <button type="button" class="btn btn-sm" @click="setSubTaskDueDate('nextWeek')">下周</button>
                 <button type="button" class="btn btn-sm" @click="setSubTaskDueDate('nextMonth')">下月</button>
@@ -231,7 +269,10 @@
             <input type="text" id="subtask-assignee" v-model="subTaskForm.assignee" placeholder="请输入协助人姓名">
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">添加</button>
+            <button type="submit" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              添加
+            </button>
             <button type="button" @click="showCreateSubTaskForm = false" class="btn btn-cancel">取消</button>
           </div>
         </form>
@@ -241,34 +282,37 @@
     <!-- 编辑子任务表单 -->
     <div v-if="showEditSubTaskForm" class="modal">
       <div class="modal-content">
-        <h2>编辑子任务</h2>
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          编辑子任务
+        </h2>
         <form @submit.prevent="updateSubTask">
           <div class="form-group">
             <label for="edit-subtask-title">子任务标题</label>
-            <input type="text" id="edit-subtask-title" v-model="editSubTaskForm.title" required>
+            <input type="text" id="edit-subtask-title" v-model="editSubTaskForm.title" required placeholder="请输入子任务标题">
           </div>
           <div class="form-group">
             <label for="edit-subtask-description">子任务描述</label>
             <QuillEditor v-model:content="editSubTaskForm.description" contentType="html" />
           </div>
-          <div style="display: flex; gap: 20px;">
-            <div class="form-group" style="flex: 1;">
+          <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
               <label for="edit-subtask-status">任务状态</label>
               <select id="edit-subtask-status" v-model="editSubTaskForm.status">
                 <option value="in_progress">进行中</option>
                 <option value="completed">已完成</option>
               </select>
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
               <label for="edit-subtask-assignee">协助人</label>
               <input type="text" id="edit-subtask-assignee" v-model="editSubTaskForm.assignee" placeholder="请输入协助人姓名">
             </div>
           </div>
           <div class="form-group">
             <label for="edit-subtask-dueDate">计划完成日期</label>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <input type="date" id="edit-subtask-dueDate" v-model="editSubTaskForm.dueDate" style="width: 200px;">
-              <div style="display: flex; gap: 5px;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="date" id="edit-subtask-dueDate" v-model="editSubTaskForm.dueDate">
+              <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-sm" @click="setEditSubTaskDueDate('tomorrow')">明天</button>
                 <button type="button" class="btn btn-sm" @click="setEditSubTaskDueDate('nextWeek')">下周</button>
                 <button type="button" class="btn btn-sm" @click="setEditSubTaskDueDate('nextMonth')">下月</button>
@@ -276,7 +320,10 @@
             </div>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">保存</button>
+            <button type="submit" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              保存
+            </button>
             <button type="button" @click="showEditSubTaskForm = false" class="btn btn-cancel">取消</button>
           </div>
         </form>
@@ -374,11 +421,11 @@ const getTimeRemaining = (dueDateString: string | null): { text: string; isOverd
   if (!dueDateString) {
     return { text: '无截止日期', isOverdue: false };
   }
-  
+
   const now = new Date();
   const dueDate = new Date(dueDateString);
   const diffInMs = dueDate.getTime() - now.getTime();
-  
+
   if (diffInMs < 0) {
     // 已逾期
     const daysOverdue = Math.ceil(Math.abs(diffInMs) / (1000 * 60 * 60 * 24));
@@ -387,53 +434,6 @@ const getTimeRemaining = (dueDateString: string | null): { text: string; isOverd
     // 未逾期
     const days = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
     return { text: `剩余 ${days} 天`, isOverdue: false };
-  }
-};
-
-// 获取任务的层级路径
-const getTaskHierarchy = async (taskId: number): Promise<string> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch task');
-    }
-    const task = await response.json();
-    
-    if (!task.parentId) {
-      return '';
-    }
-    
-    // 递归获取父任务信息
-    const parentHierarchy = await getTaskHierarchy(task.parentId);
-    
-    // 获取父任务信息
-    const parentResponse = await fetch(`${API_BASE_URL}/tasks/${task.parentId}`);
-    if (!parentResponse.ok) {
-      throw new Error('Failed to fetch parent task');
-    }
-    const parentTask = await parentResponse.json();
-    
-    return parentHierarchy ? `${parentHierarchy} > ${parentTask.title}` : parentTask.title;
-  } catch (error) {
-    console.error('Error getting task hierarchy:', error);
-    return '';
-  }
-};
-
-// 任务层级路径缓存
-const taskHierarchyCache = ref<Record<number, string>>({});
-
-// 初始化任务层级路径
-const initTaskHierarchies = async () => {
-  try {
-    for (const task of tasks.value) {
-      if (!taskHierarchyCache.value[task.id]) {
-        const hierarchy = await getTaskHierarchy(task.id);
-        taskHierarchyCache.value[task.id] = hierarchy;
-      }
-    }
-  } catch (error) {
-    console.error('Error initializing task hierarchies:', error);
   }
 };
 
@@ -446,8 +446,6 @@ const fetchTasks = async () => {
     }
     const data = await response.json();
     tasks.value = data;
-    // 初始化任务层级路径
-    await initTaskHierarchies();
   } catch (error) {
     console.error('Error fetching tasks:', error);
     showErrorToast(error instanceof Error ? error.message : '获取任务列表失败');
