@@ -347,7 +347,8 @@ const editSubTaskForm = ref({
 
 const showEditSubTaskForm = ref(false);
 
-const API_BASE_URL = 'http://localhost:10513/api';
+// 动态获取 API 基础 URL（使用当前页面的主机地址）
+const API_BASE_URL = `http://${window.location.hostname}:10513/api`;
 
 const showErrorToast = (message: string) => {
   errorMessage.value = message;
