@@ -1,8 +1,73 @@
 <template>
   <div class="app">
-    <div class="container">
+    <!-- 登录界面 -->
+    <div v-if="!currentUser" class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="login-icon">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <line x1="22" y1="21" x2="22" y2="14"></line>
+          </svg>
+          <h1>Work Track</h1>
+          <p>任务管理系统</p>
+        </div>
+        <form @submit.prevent="login" class="login-form">
+          <div class="form-group">
+            <label for="username">用户名</label>
+            <input
+              type="text"
+              id="username"
+              v-model="loginForm.username"
+              required
+              placeholder="请输入用户名"
+              autocomplete="username"
+            >
+          </div>
+          <div class="form-group">
+            <label for="password">密码</label>
+            <input
+              type="password"
+              id="password"
+              v-model="loginForm.password"
+              required
+              placeholder="请输入密码"
+              autocomplete="current-password"
+            >
+          </div>
+          <button type="submit" class="btn btn-primary btn-login" :disabled="isLoggingIn">
+            <svg v-if="!isLoggingIn" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            <svg v-else class="spinner" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+            {{ isLoggingIn ? '登录中...' : '登录' }}
+          </button>
+          <div v-if="loginError" class="login-error">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            {{ loginError }}
+          </div>
+        </form>
+        <div class="login-footer">
+          <p>支持 OpenLDAP 认证</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div v-else class="container">
       <!-- 左侧任务列表 -->
       <div class="task-list">
+        <div class="list-header">
+          <div class="user-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <div class="user-details">
+              <span class="user-name">{{ currentUser.displayName }}</span>
+              <span v-if="currentUser.isAdmin" class="admin-badge">管理员</span>
+            </div>
+          </div>
+          <button @click="logout" class="btn btn-logout" aria-label="退出登录">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </button>
+        </div>
+
         <div class="list-header">
           <h2>任务列表</h2>
           <button @click="showCreateTaskForm = true" class="create-task-btn">
@@ -43,6 +108,10 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                   {{ formatDate(task.createdAt) }}
                 </span>
+                <span v-if="currentUser.isAdmin && task.user" class="task-owner">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  {{ task.user.displayName }}
+                </span>
               </div>
             </div>
             <div class="task-item-actions">
@@ -56,7 +125,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 右侧任务详情 -->
       <div class="task-detail">
         <div v-if="selectedTask" class="detail-content">
@@ -137,7 +206,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 错误提示 -->
     <div v-if="showError" class="error-toast">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -174,6 +243,15 @@
           <div class="form-group">
             <label for="assignee">协助人</label>
             <input type="text" id="assignee" v-model="taskForm.assignee" placeholder="请输入协助人姓名">
+          </div>
+          <div v-if="currentUser.isAdmin" class="form-group">
+            <label for="userId">分配给</label>
+            <select id="userId" v-model="taskForm.userId">
+              <option :value="null">选择用户...</option>
+              <option v-for="user in users" :key="user.id" :value="user.id">
+                {{ user.displayName }} ({{ user.username }})
+              </option>
+            </select>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">
@@ -225,6 +303,15 @@
                 <button type="button" class="btn btn-sm" @click="setEditDueDate('nextMonth')">下月</button>
               </div>
             </div>
+          </div>
+          <div v-if="currentUser.isAdmin" class="form-group">
+            <label for="edit-userId">分配给</label>
+            <select id="edit-userId" v-model="editTaskForm.userId">
+              <option :value="null">选择用户...</option>
+              <option v-for="user in users" :key="user.id" :value="user.id">
+                {{ user.displayName }} ({{ user.username }})
+              </option>
+            </select>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">
@@ -278,7 +365,7 @@
         </form>
       </div>
     </div>
-    
+
     <!-- 编辑子任务表单 -->
     <div v-if="showEditSubTaskForm" class="modal">
       <div class="modal-content">
@@ -338,6 +425,14 @@ import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import './App.css';
 
+interface User {
+  id: number;
+  username: string;
+  displayName: string;
+  email: string | null;
+  isAdmin: boolean;
+}
+
 interface Task {
   id: number;
   title: string;
@@ -347,24 +442,42 @@ interface Task {
   isIndependent: boolean;
   dueDate: string | null;
   assignee: string | null;
+  userId: number | null;
   createdAt: string;
   updatedAt: string;
+  user?: User;
   subTasks?: Task[];
 }
 
+const API_BASE_URL = `http://${window.location.hostname}:10513/api`;
+
+// 认证状态
+const currentUser = ref<User | null>(null);
+const users = ref<User[]>([]);
+const authToken = ref<string | null>(null);
+
+// 登录表单
+const loginForm = ref({ username: '', password: '' });
+const loginError = ref('');
+const isLoggingIn = ref(false);
+
+// 任务状态
 const tasks = ref<Task[]>([]);
 const selectedTask = ref<Task | null>(null);
 const showCreateTaskForm = ref(false);
 const showEditTaskForm = ref(false);
 const showCreateSubTaskForm = ref(false);
+const showEditSubTaskForm = ref(false);
 const errorMessage = ref('');
 const showError = ref(false);
 
+// 任务表单
 const taskForm = ref({
   title: '',
   description: '',
   dueDate: null as string | null,
-  assignee: null as string | null
+  assignee: null as string | null,
+  userId: null as number | null
 });
 
 const editTaskForm = ref({
@@ -373,7 +486,8 @@ const editTaskForm = ref({
   description: '',
   status: 'in_progress' as 'in_progress' | 'completed',
   dueDate: null as string | null,
-  assignee: null as string | null
+  assignee: null as string | null,
+  userId: null as number | null
 });
 
 const subTaskForm = ref({
@@ -392,11 +506,73 @@ const editSubTaskForm = ref({
   assignee: null as string | null
 });
 
-const showEditSubTaskForm = ref(false);
+// 认证函数
+const checkAuth = () => {
+  const token = localStorage.getItem('authToken');
+  const userStr = localStorage.getItem('currentUser');
+  if (token && userStr) {
+    authToken.value = token;
+    currentUser.value = JSON.parse(userStr);
+  }
+};
 
-// 动态获取 API 基础 URL（使用当前页面的主机地址）
-const API_BASE_URL = `http://${window.location.hostname}:10513/api`;
+const fetchUsers = async () => {
+  if (!authToken.value || !currentUser.value?.isAdmin) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/users`, {
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      users.value = data.users;
+    }
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+};
 
+const login = async () => {
+  isLoggingIn.value = true;
+  loginError.value = '';
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginForm.value)
+    });
+    const data = await response.json();
+    if (data.success && data.token && data.user) {
+      authToken.value = data.token;
+      currentUser.value = data.user;
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+      loginForm.value = { username: '', password: '' };
+      await fetchTasks();
+      if (data.user.isAdmin) {
+        await fetchUsers();
+      }
+    } else {
+      loginError.value = data.error || '登录失败';
+    }
+  } catch (error) {
+    loginError.value = '登录失败，请检查网络连接';
+    console.error('Login error:', error);
+  } finally {
+    isLoggingIn.value = false;
+  }
+};
+
+const logout = () => {
+  authToken.value = null;
+  currentUser.value = null;
+  users.value = [];
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('currentUser');
+  tasks.value = [];
+  selectedTask.value = null;
+};
+
+// 任务相关函数
 const showErrorToast = (message: string) => {
   errorMessage.value = message;
   showError.value = true;
@@ -416,31 +592,33 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// 计算任务距离完成时间
 const getTimeRemaining = (dueDateString: string | null): { text: string; isOverdue: boolean } => {
   if (!dueDateString) {
     return { text: '无截止日期', isOverdue: false };
   }
-
   const now = new Date();
   const dueDate = new Date(dueDateString);
   const diffInMs = dueDate.getTime() - now.getTime();
-
   if (diffInMs < 0) {
-    // 已逾期
     const daysOverdue = Math.ceil(Math.abs(diffInMs) / (1000 * 60 * 60 * 24));
     return { text: `已逾期 ${daysOverdue} 天`, isOverdue: true };
   } else {
-    // 未逾期
     const days = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
     return { text: `剩余 ${days} 天`, isOverdue: false };
   }
 };
 
 const fetchTasks = async () => {
+  if (!authToken.value) return;
   try {
-    const response = await fetch(`${API_BASE_URL}/tasks`);
+    const response = await fetch(`${API_BASE_URL}/tasks`, {
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
     if (!response.ok) {
+      if (response.status === 401) {
+        logout();
+        return;
+      }
       const errorData = await response.json();
       throw new Error(errorData.error || 'Failed to fetch tasks');
     }
@@ -453,27 +631,28 @@ const fetchTasks = async () => {
 };
 
 const createTask = async () => {
+  if (!authToken.value) return;
   try {
+    const body: Record<string, any> = { ...taskForm.value };
+    if (!currentUser.value?.isAdmin) {
+      delete body.userId;
+    }
     const response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
       },
-      body: JSON.stringify(taskForm.value)
+      body: JSON.stringify(body)
     });
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || 'Failed to create task');
     }
     const newTask = await response.json();
-    tasks.value.push(newTask);
+    tasks.value.unshift(newTask);
     showCreateTaskForm.value = false;
-    taskForm.value = {
-      title: '',
-      description: '',
-      dueDate: null,
-      assignee: null
-    };
+    taskForm.value = { title: '', description: '', dueDate: null, assignee: null, userId: null };
   } catch (error) {
     console.error('Error creating task:', error);
     showErrorToast(error instanceof Error ? error.message : '创建任务失败');
@@ -481,7 +660,6 @@ const createTask = async () => {
 };
 
 const editTask = (task: Task) => {
-  // 格式化dueDate为YYYY-MM-DD格式，以适应input type="date"
   let formattedDueDate: string | null = null;
   if (task.dueDate) {
     const date = new Date(task.dueDate);
@@ -490,26 +668,32 @@ const editTask = (task: Task) => {
     const day = String(date.getDate()).padStart(2, '0');
     formattedDueDate = `${year}-${month}-${day}`;
   }
-  
   editTaskForm.value = {
     id: task.id,
     title: task.title,
     description: task.description,
     status: task.status,
     dueDate: formattedDueDate,
-    assignee: task.assignee
+    assignee: task.assignee,
+    userId: task.userId || null
   };
   showEditTaskForm.value = true;
 };
 
 const updateTask = async () => {
+  if (!authToken.value) return;
   try {
+    const body: Record<string, any> = { ...editTaskForm.value };
+    if (!currentUser.value?.isAdmin) {
+      delete body.userId;
+    }
     const response = await fetch(`${API_BASE_URL}/tasks/${editTaskForm.value.id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
       },
-      body: JSON.stringify(editTaskForm.value)
+      body: JSON.stringify(body)
     });
     if (!response.ok) {
       const errorData = await response.json();
@@ -531,12 +715,12 @@ const updateTask = async () => {
 };
 
 const deleteTask = async (id: number) => {
-  if (!confirm('确定要删除这个任务吗？')) {
-    return;
-  }
+  if (!confirm('确定要删除这个任务吗？')) return;
+  if (!authToken.value) return;
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authToken.value}` }
     });
     if (!response.ok) {
       const errorData = await response.json();
@@ -553,8 +737,11 @@ const deleteTask = async (id: number) => {
 };
 
 const showTaskDetail = async (task: Task) => {
+  if (!authToken.value) return;
   try {
-    const response = await fetch(`${API_BASE_URL}/tasks/${task.id}`);
+    const response = await fetch(`${API_BASE_URL}/tasks/${task.id}`, {
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || 'Failed to fetch task details');
@@ -568,11 +755,13 @@ const showTaskDetail = async (task: Task) => {
 };
 
 const markAsCompleted = async (id: number) => {
+  if (!authToken.value) return;
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
       },
       body: JSON.stringify({ status: 'completed' })
     });
@@ -595,13 +784,13 @@ const markAsCompleted = async (id: number) => {
 };
 
 const createSubTask = async () => {
-  if (!selectedTask.value) return;
-  
+  if (!selectedTask.value || !authToken.value) return;
   try {
     const response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
       },
       body: JSON.stringify({
         title: subTaskForm.value.title,
@@ -621,12 +810,7 @@ const createSubTask = async () => {
       selectedTask.value.subTasks.push(newSubTask);
     }
     showCreateSubTaskForm.value = false;
-    subTaskForm.value = { 
-      title: '',
-      description: '',
-      dueDate: null,
-      assignee: null
-    };
+    subTaskForm.value = { title: '', description: '', dueDate: null, assignee: null };
   } catch (error) {
     console.error('Error creating subtask:', error);
     showErrorToast(error instanceof Error ? error.message : '创建子任务失败');
@@ -634,7 +818,6 @@ const createSubTask = async () => {
 };
 
 const editSubTask = (subtask: Task) => {
-  // 格式化dueDate为YYYY-MM-DD格式，以适应input type="date"
   let formattedDueDate: string | null = null;
   if (subtask.dueDate) {
     const date = new Date(subtask.dueDate);
@@ -655,11 +838,13 @@ const editSubTask = (subtask: Task) => {
 };
 
 const updateSubTask = async () => {
+  if (!authToken.value) return;
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${editSubTaskForm.value.id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
       },
       body: JSON.stringify(editSubTaskForm.value)
     });
@@ -682,11 +867,13 @@ const updateSubTask = async () => {
 };
 
 const updateSubTaskStatus = async (id: number, completed: boolean) => {
+  if (!authToken.value) return;
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
       },
       body: JSON.stringify({ status: completed ? 'completed' : 'in_progress' })
     });
@@ -708,9 +895,11 @@ const updateSubTaskStatus = async (id: number, completed: boolean) => {
 };
 
 const deleteSubTask = async (id: number) => {
+  if (!authToken.value) return;
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authToken.value}` }
     });
     if (!response.ok) {
       throw new Error('Failed to delete subtask');
@@ -724,21 +913,20 @@ const deleteSubTask = async (id: number) => {
 };
 
 const makeSubTaskIndependent = async (id: number) => {
+  if (!authToken.value) return;
   try {
     const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
       },
       body: JSON.stringify({ isIndependent: true })
     });
     if (!response.ok) {
       throw new Error('Failed to make subtask independent');
     }
-    
-    // 刷新任务列表
     await fetchTasks();
-    // 刷新当前选中任务的子任务列表
     if (selectedTask.value) {
       await showTaskDetail(selectedTask.value);
     }
@@ -751,13 +939,9 @@ const makeSubTaskIndependent = async (id: number) => {
 
 const setDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
   const date = new Date();
-  if (type === 'tomorrow') {
-    date.setDate(date.getDate() + 1);
-  } else if (type === 'nextWeek') {
-    date.setDate(date.getDate() + 7);
-  } else if (type === 'nextMonth') {
-    date.setMonth(date.getMonth() + 1);
-  }
+  if (type === 'tomorrow') date.setDate(date.getDate() + 1);
+  else if (type === 'nextWeek') date.setDate(date.getDate() + 7);
+  else if (type === 'nextMonth') date.setMonth(date.getMonth() + 1);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -766,13 +950,9 @@ const setDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
 
 const setEditDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
   const date = new Date();
-  if (type === 'tomorrow') {
-    date.setDate(date.getDate() + 1);
-  } else if (type === 'nextWeek') {
-    date.setDate(date.getDate() + 7);
-  } else if (type === 'nextMonth') {
-    date.setMonth(date.getMonth() + 1);
-  }
+  if (type === 'tomorrow') date.setDate(date.getDate() + 1);
+  else if (type === 'nextWeek') date.setDate(date.getDate() + 7);
+  else if (type === 'nextMonth') date.setMonth(date.getMonth() + 1);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -781,13 +961,9 @@ const setEditDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
 
 const setSubTaskDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
   const date = new Date();
-  if (type === 'tomorrow') {
-    date.setDate(date.getDate() + 1);
-  } else if (type === 'nextWeek') {
-    date.setDate(date.getDate() + 7);
-  } else if (type === 'nextMonth') {
-    date.setMonth(date.getMonth() + 1);
-  }
+  if (type === 'tomorrow') date.setDate(date.getDate() + 1);
+  else if (type === 'nextWeek') date.setDate(date.getDate() + 7);
+  else if (type === 'nextMonth') date.setMonth(date.getMonth() + 1);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -796,81 +972,22 @@ const setSubTaskDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
 
 const setEditSubTaskDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
   const date = new Date();
-  if (type === 'tomorrow') {
-    date.setDate(date.getDate() + 1);
-  } else if (type === 'nextWeek') {
-    date.setDate(date.getDate() + 7);
-  } else if (type === 'nextMonth') {
-    date.setMonth(date.getMonth() + 1);
-  }
+  if (type === 'tomorrow') date.setDate(date.getDate() + 1);
+  else if (type === 'nextWeek') date.setDate(date.getDate() + 7);
+  else if (type === 'nextMonth') date.setMonth(date.getMonth() + 1);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   editSubTaskForm.value.dueDate = `${year}-${month}-${day}`;
 };
 
-onMounted(() => {
-  fetchTasks();
+onMounted(async () => {
+  checkAuth();
+  if (authToken.value) {
+    await fetchTasks();
+    if (currentUser.value?.isAdmin) {
+      await fetchUsers();
+    }
+  }
 });
 </script>
-
-<style lang="css">
-
-  
-/* Quill编辑器样式 */
-:deep(.form-group .ql-container) {
-  height: 300px !important;
-  min-height: 300px !important;
-  max-height: 300px !important;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0 !important;
-  font-family: inherit;
-  overflow-y: auto !important;
-  box-sizing: border-box;
-  margin: 0;
-  position: relative;
-}
-
-:deep(.form-group .ql-toolbar) {
-  border-radius: 4px 4px 0 0;
-  border: 1px solid #e0e0e0 !important;
-  border-bottom: none !important;
-  font-family: inherit;
-}
-
-:deep(.form-group .ql-editor) {
-  font-size: 14px;
-  line-height: 1.5;
-  min-height: 370px;
-  max-height: 370px;
-  overflow-y: auto;
-}
-
-/* 确保Quill编辑器的内部容器也有滚动条 */
-:deep(.form-group .ql-container .ql-editor.ql-blank) {
-  min-height: 370px;
-}
-
-/* 确保滚动条能够正确显示 */
-:deep(.form-group .ql-container::-webkit-scrollbar) {
-  width: 8px;
-}
-
-:deep(.form-group .ql-container::-webkit-scrollbar-track) {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-:deep(.form-group .ql-container::-webkit-scrollbar-thumb) {
-  background: #888;
-  border-radius: 4px;
-}
-
-:deep(.form-group .ql-container::-webkit-scrollbar-thumb:hover) {
-  background: #555;
-}
-
-:deep(.form-group .ql-editor:focus) {
-  outline: none;
-}
-</style>

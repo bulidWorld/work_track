@@ -2,7 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import sequelize from './config/database';
 import taskRoutes from './routes/taskRoutes';
+import authRoutes from './routes/authRoutes';
+import { createJwtMiddleware } from './auth/ldapAuth';
 import Task from './models/Task';
+import User from './models/User';
+import createAdminUser from './init/adminUser';
 
 // 建立自关联关系
 Task.hasMany(Task, {
@@ -15,6 +19,10 @@ Task.belongsTo(Task, {
   as: 'parent'
 });
 
+// 建立 User 和 Task 关联
+User.hasMany(Task, { foreignKey: 'userId', as: 'tasks' });
+Task.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 const app = express();
 const PORT = 10513;
 
@@ -22,14 +30,21 @@ const PORT = 10513;
 app.use(cors());
 app.use(express.json());
 
+// JWT authentication middleware
+app.use(createJwtMiddleware(User));
+
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api', taskRoutes);
 
-// Sync database
+// Sync database and create admin user
 const syncDatabase = async (): Promise<void> => {
   try {
     await sequelize.sync({ force: false });
     console.log('Database synchronized');
+
+    // Create admin user
+    await createAdminUser();
   } catch (error) {
     console.error('Error synchronizing database:', error);
     process.exit(1);

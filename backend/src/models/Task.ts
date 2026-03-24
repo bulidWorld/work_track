@@ -10,6 +10,7 @@ class Task extends Model {
   public isIndependent!: boolean;
   public dueDate!: Date | null;
   public assignee!: string | null;
+  public userId!: number | null;
   public createdAt!: Date;
   public updatedAt!: Date;
 }
@@ -51,6 +52,14 @@ Task.init({
   assignee: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   sequelize,
