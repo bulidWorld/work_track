@@ -16,7 +16,7 @@ Task.belongsTo(Task, {
 });
 
 const app = express();
-const PORT = 3000;
+const PORT = 10513;
 
 // Middleware
 app.use(cors());
@@ -40,7 +40,7 @@ const syncDatabase = async (): Promise<void> => {
 const startServer = async (): Promise<void> => {
   try {
     await syncDatabase();
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
