@@ -1,8 +1,9 @@
 import { Sequelize } from 'sequelize';
 
-const sequelize = new Sequelize('track_work', 'root', 'Zwx199310', {
-  host: 'localhost',
-  dialect: 'mysql',
+const sequelize = new Sequelize('track_work', 'naze', 'Naze666666', {
+  host: '192.168.124.247',
+  port: 5432,
+  dialect: 'postgres',
   logging: false
 });
 
