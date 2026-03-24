@@ -40,7 +40,7 @@ app.use('/api', taskRoutes);
 // Sync database and create admin user
 const syncDatabase = async (): Promise<void> => {
   try {
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: false, alter: true });
     console.log('Database synchronized');
 
     // Create admin user
