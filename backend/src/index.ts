@@ -3,10 +3,12 @@ import cors from 'cors';
 import sequelize from './config/database';
 import taskRoutes from './routes/taskRoutes';
 import authRoutes from './routes/authRoutes';
+import attachmentRoutes from './routes/attachmentRoutes';
 import { createJwtMiddleware } from './auth/ldapAuth';
 import Task from './models/Task';
 import User from './models/User';
 import createAdminUser from './init/adminUser';
+import Attachment from './models/Attachment';
 
 // 建立自关联关系
 Task.hasMany(Task, {
@@ -24,7 +26,7 @@ User.hasMany(Task, { foreignKey: 'userId', as: 'tasks' });
 Task.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 const app = express();
-const PORT = 10513;
+const PORT: number = parseInt(process.env.PORT || '10513', 10);
 
 // Middleware
 app.use(cors());
@@ -36,6 +38,7 @@ app.use(createJwtMiddleware(User));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', taskRoutes);
+app.use('/api', attachmentRoutes);
 
 // Sync database and create admin user
 const syncDatabase = async (): Promise<void> => {

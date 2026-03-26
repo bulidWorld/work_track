@@ -87,7 +87,14 @@
             @click="showTaskDetail(task)"
           >
             <div class="task-title">
-              <h3>{{ task.title }}</h3>
+              <div class="task-header">
+                <h3>{{ task.title }}</h3>
+                <!-- 任务路径显示在右上角 -->
+                <div v-if="task.path && task.path.length > 0" class="task-path" :title="formatTaskPath(task.path)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                  <span class="task-path-text">{{ formatTaskPath(task.path) }}</span>
+                </div>
+              </div>
               <div class="task-status-container">
                 <span class="task-status-indicator" :class="task.status">
                   <svg v-if="task.status === 'in_progress'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
@@ -151,6 +158,54 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               标记为已完成
             </button>
+          </div>
+
+          <!-- 附件区域 -->
+          <div class="attachments-section">
+            <div class="attachments-header">
+              <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                附件 <span v-if="attachments.length" class="attachment-count">{{ attachments.length }}</span>
+              </h3>
+              <label class="btn btn-upload" v-if="selectedTask.status === 'in_progress'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                上传附件
+                <input type="file" @change="uploadAttachment" style="display: none" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip">
+              </label>
+            </div>
+            <div v-if="isUploading" class="uploading-indicator">
+              <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+              上传中...
+            </div>
+            <div v-else-if="attachments.length === 0" class="empty-attachments">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.3;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+              <p>暂无附件</p>
+            </div>
+            <div v-else class="attachments-list">
+              <div v-for="attachment in attachments" :key="attachment.id" class="attachment-item">
+                <div class="attachment-icon">
+                  <svg v-if="attachment.mimeType.startsWith('image/')" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  <svg v-else-if="attachment.mimeType === 'application/pdf'" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                </div>
+                <div class="attachment-info">
+                  <div class="attachment-name">{{ attachment.originalName }}</div>
+                  <div class="attachment-meta">
+                    <span>{{ formatFileSize(attachment.size) }}</span>
+                    <span>•</span>
+                    <span>{{ formatDate(attachment.createdAt) }}</span>
+                  </div>
+                </div>
+                <div class="attachment-actions">
+                  <a :href="`${API_BASE_URL}/attachments/${attachment.id}`" :download="attachment.originalName" class="btn btn-download" @click.prevent="downloadAttachment(attachment)" title="下载">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  </a>
+                  <button @click="deleteAttachment(attachment.id)" class="btn btn-delete-attachment" title="删除" v-if="selectedTask.status === 'in_progress'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="subtasks">
@@ -244,7 +299,7 @@
             <label for="assignee">协助人</label>
             <input type="text" id="assignee" v-model="taskForm.assignee" placeholder="请输入协助人姓名">
           </div>
-          <div v-if="currentUser.isAdmin" class="form-group">
+          <div v-if="currentUser?.isAdmin" class="form-group">
             <label for="userId">分配给</label>
             <select id="userId" v-model="taskForm.userId">
               <option :value="null">选择用户...</option>
@@ -304,7 +359,7 @@
               </div>
             </div>
           </div>
-          <div v-if="currentUser.isAdmin" class="form-group">
+          <div v-if="currentUser?.isAdmin" class="form-group">
             <label for="edit-userId">分配给</label>
             <select id="edit-userId" v-model="editTaskForm.userId">
               <option :value="null">选择用户...</option>
@@ -447,9 +502,23 @@ interface Task {
   updatedAt: string;
   user?: User;
   subTasks?: Task[];
+  path?: Array<{ id: number; title: string }>;  // 任务路径
 }
 
-const API_BASE_URL = `http://${window.location.hostname}:10513/api`;
+interface Attachment {
+  id: number;
+  taskId: number;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  filePath: string;
+  uploadedBy: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const API_BASE_URL = '/api';
 
 // 认证状态
 const currentUser = ref<User | null>(null);
@@ -496,6 +565,10 @@ const subTaskForm = ref({
   dueDate: null as string | null,
   assignee: null as string | null
 });
+
+// 附件相关状态
+const attachments = ref<Attachment[]>([]);
+const isUploading = ref(false);
 
 const editSubTaskForm = ref({
   id: 0,
@@ -590,6 +663,12 @@ const formatDate = (dateString: string) => {
     hour: '2-digit',
     minute: '2-digit'
   });
+};
+
+// 格式化任务路径：一级父任务->二级->...->当前任务
+const formatTaskPath = (path: Array<{ id: number; title: string }>): string => {
+  if (!path || path.length === 0) return '';
+  return path.map(p => p.title).join(' -> ');
 };
 
 const getTimeRemaining = (dueDateString: string | null): { text: string; isOverdue: boolean } => {
@@ -748,6 +827,8 @@ const showTaskDetail = async (task: Task) => {
     }
     const taskDetail = await response.json();
     selectedTask.value = taskDetail;
+    // 加载附件
+    await loadAttachments(task.id);
   } catch (error) {
     console.error('Error fetching task details:', error);
     showErrorToast(error instanceof Error ? error.message : '获取任务详情失败');
@@ -979,6 +1060,98 @@ const setEditSubTaskDueDate = (type: 'tomorrow' | 'nextWeek' | 'nextMonth') => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   editSubTaskForm.value.dueDate = `${year}-${month}-${day}`;
+};
+
+// 附件相关函数
+const loadAttachments = async (taskId: number) => {
+  if (!authToken.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    attachments.value = data;
+  } catch (error) {
+    console.error('Error loading attachments:', error);
+  }
+};
+
+const uploadAttachment = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file || !selectedTask.value) return;
+
+  isUploading.value = true;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks/${selectedTask.value.id}/attachments`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken.value}` },
+      body: formData
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '上传失败');
+    }
+    await loadAttachments(selectedTask.value.id);
+    showErrorToast('附件上传成功');
+  } catch (error) {
+    console.error('Error uploading attachment:', error);
+    showErrorToast(error instanceof Error ? error.message : '上传失败');
+  } finally {
+    isUploading.value = false;
+    input.value = '';
+  }
+};
+
+const downloadAttachment = async (attachment: Attachment) => {
+  if (!authToken.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/attachments/${attachment.id}`, {
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
+    if (!response.ok) throw new Error('下载失败');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = attachment.originalName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Error downloading attachment:', error);
+    showErrorToast('下载失败');
+  }
+};
+
+const deleteAttachment = async (id: number) => {
+  if (!confirm('确定要删除这个附件吗？')) return;
+  if (!authToken.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/attachments/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
+    if (!response.ok) throw new Error('删除失败');
+    await loadAttachments(selectedTask.value!.id);
+    showErrorToast('附件已删除');
+  } catch (error) {
+    console.error('Error deleting attachment:', error);
+    showErrorToast('删除失败');
+  }
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 };
 
 onMounted(async () => {

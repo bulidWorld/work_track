@@ -364,16 +364,13 @@
   min-width: 0;
 }
 
-/* 任务层级关系 */
-.task-hierarchy {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  display: inline-block;
-  margin-bottom: 6px;
-  font-weight: 500;
+/* 任务头部（标题 + 路径） */
+.task-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .task-title h3 {
@@ -385,6 +382,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.4;
+  flex: 1;
+}
+
+/* 任务路径显示 */
+.task-path {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--surface-tertiary);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 50%;
+  overflow: hidden;
+}
+
+.task-path svg {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+
+.task-path-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 任务状态容器 */
@@ -954,4 +980,164 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* 附件区域样式 */
+.attachments-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.attachments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.attachments-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.attachment-count {
+  background: var(--primary-color);
+  color: white;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: normal;
+}
+
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.uploading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  padding: 20px;
+  justify-content: center;
+}
+
+.uploading-indicator .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-attachments {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-attachments svg {
+  margin-bottom: 12px;
+}
+
+.empty-attachments p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.attachment-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.attachment-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.attachment-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  display: flex;
+  gap: 6px;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-download,
+.btn-delete-attachment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-download:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.btn-delete-attachment:hover {
+  background: var(--danger-color);
+  border-color: var(--danger-color);
+  color: white;
 }

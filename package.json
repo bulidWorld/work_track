@@ -1,5 +1,16 @@
 {
+  "name": "work-track-unified",
+  "version": "1.0.0",
+  "description": "Work Track unified server (frontend + backend)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
   "dependencies": {
-    "lucide-vue-next": "^1.0.0"
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "http-proxy": "^1.18.1",
+    "http-proxy-middleware": "^3.0.5"
   }
 }
