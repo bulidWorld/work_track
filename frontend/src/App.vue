@@ -296,7 +296,7 @@
               <h3>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                 任务进展
-                <span v-if="progresses.length" class="progress-count">{{ progresses.length }}</span>
+                <span v-if="progresses && progresses.length" class="progress-count">{{ progresses.length }}</span>
               </h3>
               <button @click="toggleProgresses" class="btn btn-toggle-progress">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: showProgresses ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -319,7 +319,7 @@
               </div>
               
               <!-- 进展列表 -->
-              <div v-if="progresses.length === 0" class="empty-progress">
+              <div v-if="!progresses || progresses.length === 0" class="empty-progress">
                 <p>暂无进展记录</p>
               </div>
               <div v-else class="progress-list">
@@ -674,7 +674,7 @@ const filterUserId = ref<number | null>(null);
 
 // 进展状态
 const progresses = ref<Progress[]>([]);
-const showProgresses = ref(false);
+const showProgresses = ref(true);  // 默认展开
 const newProgressContent = ref('');
 
 // 任务表单
@@ -1312,11 +1312,15 @@ const loadProgresses = async (taskId: number) => {
     const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/progress`, {
       headers: { Authorization: `Bearer ${authToken.value}` }
     });
-    if (!response.ok) return;
+    if (!response.ok) {
+      progresses.value = [];
+      return;
+    }
     const data = await response.json();
-    progresses.value = data;
+    progresses.value = Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error loading progresses:', error);
+    progresses.value = [];
   }
 };
 
