@@ -84,7 +84,7 @@
             </button>
           </div>
         </div>
-        <div v-if="tasks.length === 0" class="empty-state">
+        <div v-if="!tasks || tasks.length === 0" class="empty-state">
           <p>暂无任务，点击上方按钮创建新任务</p>
         </div>
         <div v-else>
@@ -203,7 +203,7 @@
             <div class="attachments-header">
               <h3>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                附件 <span v-if="attachments.length" class="attachment-count">{{ attachments.length }}</span>
+                附件 <span v-if="attachments && attachments.length" class="attachment-count">{{ attachments.length }}</span>
               </h3>
               <label class="btn btn-upload" v-if="selectedTask.status === 'in_progress'">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -215,7 +215,7 @@
               <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
               上传中...
             </div>
-            <div v-else-if="attachments.length === 0" class="empty-attachments">
+            <div v-else-if="!attachments || attachments.length === 0" class="empty-attachments">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.3;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
               <p>暂无附件</p>
             </div>
@@ -254,7 +254,7 @@
                 添加子任务
               </button>
             </div>
-            <div v-if="selectedTask.subTasks && selectedTask.subTasks.length === 0" class="empty-subtasks">
+            <div v-if="!selectedTask.subTasks || selectedTask.subTasks.length === 0" class="empty-subtasks">
               <p>暂无子任务</p>
             </div>
             <div v-else class="subtask-list">
@@ -1220,11 +1220,15 @@ const loadAttachments = async (taskId: number) => {
     const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
       headers: { Authorization: `Bearer ${authToken.value}` }
     });
-    if (!response.ok) return;
+    if (!response.ok) {
+      attachments.value = [];
+      return;
+    }
     const data = await response.json();
-    attachments.value = data;
+    attachments.value = Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error loading attachments:', error);
+    attachments.value = [];
   }
 };
 
