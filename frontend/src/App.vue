@@ -70,15 +70,25 @@
 
         <div class="list-header">
           <h2>任务列表</h2>
-          <button @click="showCreateTaskForm = true" class="create-task-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            新建任务
-          </button>
+          <div class="list-actions">
+            <!-- 用户筛选框 (管理员可见) -->
+            <select v-if="currentUser?.isAdmin" v-model="filterUserId" @change="onFilterUserChange" class="user-filter-select">
+              <option :value="null">所有用户</option>
+              <option v-for="u in users" :key="u.id" :value="u.id">
+                {{ u.displayName }} ({{ u.username }})
+              </option>
+            </select>
+            <button @click="showCreateTaskForm = true" class="create-task-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              新建任务
+            </button>
+          </div>
         </div>
         <div v-if="tasks.length === 0" class="empty-state">
           <p>暂无任务，点击上方按钮创建新任务</p>
         </div>
-        <div v-else class="tasks">
+        <div v-else>
+          <div class="tasks">
           <div
             v-for="task in tasks"
             :key="task.id"
@@ -130,6 +140,28 @@
               </button>
             </div>
           </div>
+          </div>
+          
+          <!-- 分页控件 -->
+          <div class="pagination" v-if="pagination.totalPages > 1">
+            <button 
+              @click="changePage(pagination.page - 1)" 
+              :disabled="pagination.page <= 1"
+              class="btn btn-pagination"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span class="pagination-info">
+              第 {{ pagination.page }} / {{ pagination.totalPages }} 页 (共 {{ pagination.total }} 条)
+            </span>
+            <button 
+              @click="changePage(pagination.page + 1)" 
+              :disabled="pagination.page >= pagination.totalPages"
+              class="btn btn-pagination"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -158,6 +190,12 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               标记为已完成
             </button>
+          </div>
+
+          <!-- 公共任务提示 -->
+          <div v-if="selectedTask?.isPublic" class="public-task-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            公共任务 - 其他用户可以查看和编辑
           </div>
 
           <!-- 附件区域 -->
@@ -251,6 +289,63 @@
               </div>
             </div>
           </div>
+
+          <!-- 任务进展区域 -->
+          <div class="progress-section">
+            <div class="progress-header">
+              <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                任务进展
+                <span v-if="progresses.length" class="progress-count">{{ progresses.length }}</span>
+              </h3>
+              <button @click="toggleProgresses" class="btn btn-toggle-progress">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: showProgresses ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </div>
+            
+            <div v-if="showProgresses" class="progress-content">
+              <!-- 添加进展输入框 (仅当可以编辑时显示) -->
+              <div v-if="selectedTask?.canEdit !== false" class="add-progress-form">
+                <textarea 
+                  v-model="newProgressContent" 
+                  placeholder="添加任务进展..." 
+                  rows="2"
+                  class="progress-input"
+                ></textarea>
+                <button @click="createProgress" class="btn btn-primary btn-sm" :disabled="!newProgressContent.trim()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  添加
+                </button>
+              </div>
+              
+              <!-- 进展列表 -->
+              <div v-if="progresses.length === 0" class="empty-progress">
+                <p>暂无进展记录</p>
+              </div>
+              <div v-else class="progress-list">
+                <div v-for="progress in progresses" :key="progress.id" class="progress-item">
+                  <div class="progress-avatar">
+                    {{ progress.user?.displayName?.charAt(0) || 'U' }}
+                  </div>
+                  <div class="progress-body">
+                    <div class="progress-meta">
+                      <span class="progress-author">{{ progress.user?.displayName || '未知用户' }}</span>
+                      <span class="progress-time">{{ formatDate(progress.createdAt) }}</span>
+                    </div>
+                    <div class="progress-text">{{ progress.content }}</div>
+                    <button 
+                      v-if="progress.userId === currentUser?.id || currentUser?.isAdmin" 
+                      @click="deleteProgress(progress.id)" 
+                      class="btn btn-delete-progress"
+                      title="删除"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div v-else class="empty-detail">
           <div class="empty-detail-content">
@@ -307,6 +402,12 @@
                 {{ user.displayName }} ({{ user.username }})
               </option>
             </select>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="taskForm.isPublic">
+              <span>设为公共任务（其他用户可以查看、编辑和添加进展）</span>
+            </label>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">
@@ -367,6 +468,12 @@
                 {{ user.displayName }} ({{ user.username }})
               </option>
             </select>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="editTaskForm.isPublic">
+              <span>设为公共任务（其他用户可以查看、编辑和添加进展）</span>
+            </label>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">
@@ -495,6 +602,7 @@ interface Task {
   status: 'in_progress' | 'completed';
   parentId: number | null;
   isIndependent: boolean;
+  isPublic: boolean;
   dueDate: string | null;
   assignee: string | null;
   userId: number | null;
@@ -503,6 +611,24 @@ interface Task {
   user?: User;
   subTasks?: Task[];
   path?: Array<{ id: number; title: string }>;  // 任务路径
+  canEdit?: boolean;
+}
+
+interface Progress {
+  id: number;
+  taskId: number;
+  content: string;
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+}
+
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 interface Attachment {
@@ -540,13 +666,25 @@ const showEditSubTaskForm = ref(false);
 const errorMessage = ref('');
 const showError = ref(false);
 
+// 分页状态
+const pagination = ref<Pagination>({ total: 0, page: 1, limit: 20, totalPages: 0 });
+
+// 用户筛选状态
+const filterUserId = ref<number | null>(null);
+
+// 进展状态
+const progresses = ref<Progress[]>([]);
+const showProgresses = ref(false);
+const newProgressContent = ref('');
+
 // 任务表单
 const taskForm = ref({
   title: '',
   description: '',
   dueDate: null as string | null,
   assignee: null as string | null,
-  userId: null as number | null
+  userId: null as number | null,
+  isPublic: false
 });
 
 const editTaskForm = ref({
@@ -556,7 +694,8 @@ const editTaskForm = ref({
   status: 'in_progress' as 'in_progress' | 'completed',
   dueDate: null as string | null,
   assignee: null as string | null,
-  userId: null as number | null
+  userId: null as number | null,
+  isPublic: false
 });
 
 const subTaskForm = ref({
@@ -690,7 +829,14 @@ const getTimeRemaining = (dueDateString: string | null): { text: string; isOverd
 const fetchTasks = async () => {
   if (!authToken.value) return;
   try {
-    const response = await fetch(`${API_BASE_URL}/tasks`, {
+    const params = new URLSearchParams();
+    params.append('page', pagination.value.page.toString());
+    params.append('limit', pagination.value.limit.toString());
+    if (filterUserId.value) {
+      params.append('userId', filterUserId.value.toString());
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/tasks?${params.toString()}`, {
       headers: { Authorization: `Bearer ${authToken.value}` }
     });
     if (!response.ok) {
@@ -702,7 +848,8 @@ const fetchTasks = async () => {
       throw new Error(errorData.error || 'Failed to fetch tasks');
     }
     const data = await response.json();
-    tasks.value = data;
+    tasks.value = data.tasks;
+    pagination.value = data.pagination;
   } catch (error) {
     console.error('Error fetching tasks:', error);
     showErrorToast(error instanceof Error ? error.message : '获取任务列表失败');
@@ -731,7 +878,7 @@ const createTask = async () => {
     const newTask = await response.json();
     tasks.value.unshift(newTask);
     showCreateTaskForm.value = false;
-    taskForm.value = { title: '', description: '', dueDate: null, assignee: null, userId: null };
+    taskForm.value = { title: '', description: '', dueDate: null, assignee: null, userId: null, isPublic: false };
   } catch (error) {
     console.error('Error creating task:', error);
     showErrorToast(error instanceof Error ? error.message : '创建任务失败');
@@ -754,7 +901,8 @@ const editTask = (task: Task) => {
     status: task.status,
     dueDate: formattedDueDate,
     assignee: task.assignee,
-    userId: task.userId || null
+    userId: task.userId || null,
+    isPublic: task.isPublic
   };
   showEditTaskForm.value = true;
 };
@@ -829,6 +977,9 @@ const showTaskDetail = async (task: Task) => {
     selectedTask.value = taskDetail;
     // 加载附件
     await loadAttachments(task.id);
+    // 加载进展
+    await loadProgresses(task.id);
+    showProgresses.value = false;  // 默认折叠进展
   } catch (error) {
     console.error('Error fetching task details:', error);
     showErrorToast(error instanceof Error ? error.message : '获取任务详情失败');
@@ -1152,6 +1303,78 @@ const formatFileSize = (bytes: number): string => {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+};
+
+// 进展相关函数
+const loadProgresses = async (taskId: number) => {
+  if (!authToken.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/progress`, {
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    progresses.value = data;
+  } catch (error) {
+    console.error('Error loading progresses:', error);
+  }
+};
+
+const createProgress = async () => {
+  if (!selectedTask.value || !authToken.value || !newProgressContent.value.trim()) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks/${selectedTask.value.id}/progress`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken.value}`
+      },
+      body: JSON.stringify({ content: newProgressContent.value })
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '添加进展失败');
+    }
+    const newProgress = await response.json();
+    progresses.value.unshift(newProgress);
+    newProgressContent.value = '';
+    showErrorToast('进展添加成功');
+  } catch (error) {
+    console.error('Error creating progress:', error);
+    showErrorToast(error instanceof Error ? error.message : '添加进展失败');
+  }
+};
+
+const deleteProgress = async (id: number) => {
+  if (!confirm('确定要删除这条进展吗？')) return;
+  if (!authToken.value) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/progress/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authToken.value}` }
+    });
+    if (!response.ok) throw new Error('删除失败');
+    progresses.value = progresses.value.filter(p => p.id !== id);
+    showErrorToast('进展已删除');
+  } catch (error) {
+    console.error('Error deleting progress:', error);
+    showErrorToast('删除失败');
+  }
+};
+
+const toggleProgresses = () => {
+  showProgresses.value = !showProgresses.value;
+};
+
+const changePage = (newPage: number) => {
+  if (newPage < 1 || newPage > pagination.value.totalPages) return;
+  pagination.value.page = newPage;
+  fetchTasks();
+};
+
+const onFilterUserChange = () => {
+  pagination.value.page = 1;
+  fetchTasks();
 };
 
 onMounted(async () => {

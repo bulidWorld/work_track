@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import Task from '../models/Task';
 import User from '../models/User';
 
@@ -26,48 +27,79 @@ export const getTasks = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    let tasks;
+    // 分页参数
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = (page - 1) * limit;
 
-    // 只查询独立任务（isIndependent = true），不展示子任务
+    // 用户筛选参数
+    const filterUserId = req.query.userId ? parseInt(req.query.userId as string) : null;
+
+    let whereClause: any = { isIndependent: true };
+
+    // 管理员可以查看所有任务，或按用户筛选
     if (user.isAdmin) {
-      tasks = await Task.findAll({
-        where: { isIndependent: true },  // 只显示独立任务
-        include: [{
-          model: User,
-          as: 'user',
-          attributes: ['id', 'username', 'displayName']
-        }],
-        order: [['createdAt', 'DESC']]
-      });
+      if (filterUserId) {
+        whereClause.userId = filterUserId;
+      }
     } else {
-      tasks = await Task.findAll({
-        where: { 
-          userId: user.id,
-          isIndependent: true  // 只显示独立任务
-        },
-        include: [{
-          model: User,
-          as: 'user',
-          attributes: ['id', 'username', 'displayName']
-        }],
-        order: [['createdAt', 'DESC']]
-      });
+      // 普通用户：查看自己的任务 + 公共任务
+      if (filterUserId && filterUserId === user.id) {
+        // 筛选自己
+        whereClause.userId = user.id;
+      } else if (filterUserId && filterUserId !== user.id) {
+        // 筛选其他用户：只能查看公共任务
+        whereClause = {
+          isIndependent: true,
+          userId: filterUserId,
+          isPublic: true
+        };
+      } else {
+        // 无筛选：查看自己的任务 + 所有公共任务
+        whereClause = {
+          isIndependent: true,
+          [require('sequelize').Op.or]: [
+            { userId: user.id },
+            { isPublic: true }
+          ]
+        };
+      }
     }
+
+    const { count, rows } = await Task.findAndCountAll({
+      where: whereClause,
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'username', 'displayName']
+      }],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
 
     // 为每个任务添加路径信息
     const tasksWithPath = await Promise.all(
-      tasks.map(async (task: any) => {
+      rows.map(async (task: any) => {
         const taskData = task.toJSON();
         const path = await getTaskPath(task);
         return {
           ...taskData,
-          path: path  // 任务路径数组
+          path: path
         };
       })
     );
 
     console.log('Tasks fetched successfully:', tasksWithPath.length);
-    res.json(tasksWithPath);
+    res.json({
+      tasks: tasksWithPath,
+      pagination: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     console.error('Error getting tasks:', error);
     res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) });
@@ -97,8 +129,9 @@ export const getTaskById = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Check permission
-    if (!user.isAdmin && task.userId !== user.id) {
+    // Check permission: owner, admin, or public task
+    const canView = user.isAdmin || task.userId === user.id || task.isPublic;
+    if (!canView) {
       res.status(403).json({ error: 'Access denied' });
       return;
     }
@@ -109,7 +142,8 @@ export const getTaskById = async (req: Request, res: Response): Promise<void> =>
 
     res.json({
       ...task.toJSON(),
-      subTasks
+      subTasks,
+      canEdit: user.isAdmin || task.userId === user.id  // 标记是否可以编辑
     });
   } catch (error) {
     console.error('Error getting task:', error);
@@ -126,7 +160,7 @@ export const createTask = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { parentId, userId, ...taskData } = req.body;
+    const { parentId, userId, isPublic, ...taskData } = req.body;
 
     // Determine the actual user ID for the task
     let taskUserId = user.id;
@@ -158,7 +192,8 @@ export const createTask = async (req: Request, res: Response): Promise<void> => 
         ...taskData,
         parentId,
         userId: taskUserId,
-        isIndependent: false
+        isIndependent: false,
+        isPublic: parentTask.isPublic  // 子任务继承父任务的公共属性
       });
       console.log('Created subTask:', subTask);
       res.status(201).json(subTask);
@@ -167,7 +202,8 @@ export const createTask = async (req: Request, res: Response): Promise<void> => 
       const task = await Task.create({
         ...taskData,
         userId: taskUserId,
-        isIndependent: true
+        isIndependent: true,
+        isPublic: isPublic || false
       });
       console.log('Created Task:', task);
       res.status(201).json(task);
@@ -195,13 +231,22 @@ export const updateTask = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Check permission
+    // Check permission: only owner or admin can edit
     if (!user.isAdmin && task.userId !== user.id) {
       res.status(403).json({ error: 'Access denied' });
       return;
     }
 
-    await task.update(req.body);
+    // Only allow updating specific fields
+    const allowedFields = ['title', 'description', 'status', 'dueDate', 'assignee', 'isPublic'];
+    const updateData: any = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    }
+
+    await task.update(updateData);
     res.json(task);
   } catch (error) {
     console.error('Error updating task:', error);

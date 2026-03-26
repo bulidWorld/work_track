@@ -8,6 +8,7 @@ class Task extends Model {
   public status!: 'in_progress' | 'completed';
   public parentId!: number | null;
   public isIndependent!: boolean;
+  public isPublic!: boolean;
   public dueDate!: Date | null;
   public assignee!: string | null;
   public userId!: number | null;
@@ -44,6 +45,10 @@ Task.init({
   isIndependent: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  isPublic: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   dueDate: {
     type: DataTypes.DATE,
