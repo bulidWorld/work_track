@@ -20,7 +20,7 @@ const getTaskPath = async (task: any, path: any[] = [], visitedIds: Set<number> 
 
 export const getTasks = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = req.user as { id: number; isAdmin: boolean } | undefined;
+    const user = req.user as { id: number; isAdmin: boolean; username?: string } | undefined;
 
     if (!user) {
       res.status(401).json({ error: 'Authentication required' });
@@ -43,10 +43,16 @@ export const getTasks = async (req: Request, res: Response): Promise<void> => {
         whereClause.userId = filterUserId;
       }
     } else {
-      // 普通用户：查看自己的任务 + 公共任务
+      // 普通用户：查看自己创建的 + 分配给自己的 + 公共任务
       if (filterUserId && filterUserId === user.id) {
-        // 筛选自己
-        whereClause.userId = user.id;
+        // 筛选自己：自己创建的或分配给自己的
+        whereClause = {
+          isIndependent: true,
+          [Op.or]: [
+            { userId: user.id },
+            { assignee: user.username || null }
+          ]
+        };
       } else if (filterUserId && filterUserId !== user.id) {
         // 筛选其他用户：只能查看公共任务
         whereClause = {
@@ -55,11 +61,12 @@ export const getTasks = async (req: Request, res: Response): Promise<void> => {
           isPublic: true
         };
       } else {
-        // 无筛选：查看自己的任务 + 所有公共任务
+        // 无筛选：自己创建的 + 分配给自己的 + 所有公共任务
         whereClause = {
           isIndependent: true,
-          [require('sequelize').Op.or]: [
+          [Op.or]: [
             { userId: user.id },
+            { assignee: user.username || null },
             { isPublic: true }
           ]
         };
