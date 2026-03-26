@@ -125,7 +125,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                   {{ formatDate(task.createdAt) }}
                 </span>
-                <span v-if="currentUser.isAdmin && task.user" class="task-owner">
+                <span v-if="currentUser?.isAdmin && task.user" class="task-owner">
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                   {{ task.user.displayName }}
                 </span>
@@ -848,8 +848,10 @@ const fetchTasks = async () => {
       throw new Error(errorData.error || 'Failed to fetch tasks');
     }
     const data = await response.json();
-    tasks.value = data.tasks;
-    pagination.value = data.pagination;
+    console.log('Fetched tasks data:', data);
+    tasks.value = Array.isArray(data.tasks) ? data.tasks : [];
+    pagination.value = data.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };
+    console.log('Tasks assigned:', tasks.value.length);
   } catch (error) {
     console.error('Error fetching tasks:', error);
     showErrorToast(error instanceof Error ? error.message : '获取任务列表失败');
